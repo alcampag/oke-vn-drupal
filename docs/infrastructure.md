@@ -29,8 +29,13 @@ mode, do not assume every subnet is created automatically.
   A private Kubernetes API endpoint needs a private access path from your client.
 - Review the upstream
   [network-rules report](https://github.com/oracle-devrel/technology-engineering/blob/main/oci-and-db/cloud-native/devops-and-containers/oke/oke-rm/files/infra/network-rules-report.md)
-  and compare it with the application flows below. Do not assume its defaults
-  implement this demo's HTTPS-only frontend or encrypted FSS access.
+  for the rules already supplied by the stack: direct LB-to-pod connectivity,
+  frontend TCP 80/443, and pod-to-FSS rules including encrypted NFS on TCP 2051
+  when VCN-native networking and `create_fss` are enabled. Reuse these rules;
+  do not add duplicates. MySQL rules are supplied when its database networking
+  options are enabled. For this demo's HTTPS-only network policy, remove the
+  frontend HTTP ingress/response rules in your stack configuration while
+  retaining HTTPS; the chart itself creates only a 443 listener.
 
 Plan and apply the infrastructure stack before creating the OKE stack. Keep its
 outputs private: they contain account-specific resource identifiers.
@@ -69,15 +74,16 @@ Terraform state, plans, or downloaded environment-specific stack configurations.
 | Created OKE cluster | Local `CLUSTER_ID` and kubeconfig |
 | `pod_subnet_id`, `pod_nsg_id` | Virtual-node pod networking and application network rules |
 | `external_lb_subnet_id` | Public LB placement; its subnet CIDR becomes `drupal.reverseProxyAddresses` |
-| `lb_nsg_id` | Review for the LB backend role; supply it alongside a dedicated frontend NSG in local Service annotations |
+| `lb_nsg_id` and the stack-created frontend LB NSG | Supply both backend and frontend NSG identifiers in local Service annotations |
 | `fss_nsg_id` and created FSS subnet | Local `FSS_NSG_ID` / `FSS_SUBNET_ID` for mount-target creation |
 | `db_subnet_id`, `database_nsg_ids` | Private MySQL DB System placement and database-side rules |
 | `database_client_nsg_ids` (when enabled) | Attach the MySQL client NSG to the pod network as required by the generated rules |
 
-The stack has one general LB NSG output, not separate frontend/backend outputs.
-Reuse its appropriate backend rules and create/configure the additional frontend
-NSG for TCP 443. Verify the actual FSS subnet in OCI; do not invent an output name
-if the selected release does not export it.
+The stack creates both backend and frontend LB NSGs. Its current root outputs
+export `lb_nsg_id` for the backend, but not a separate frontend identifier;
+locate the existing `oke-lb-frontend-<stack-suffix>` NSG in OCI rather than
+creating another one. Likewise, verify the actual FSS subnet in OCI if your
+selected release does not export it.
 
 Create the MySQL DB System separately, then continue with the README's IAM/network
 checks and mount-target creation. The chart dynamically provisions the filesystem
@@ -106,14 +112,18 @@ for current permission requirements.
 
 ## Network rules
 
-Reuse the stack-created NSGs where appropriate and add the demo-specific rules
-and frontend LB NSG. Attach the frontend LB, backend LB, pod, FSS, and database NSGs
+Reuse the stack-created NSGs and their rules. Attach the frontend LB, backend LB,
+pod, FSS, and database NSGs
 to their respective resources; do not create duplicate NSGs unnecessarily.
 The mount target belongs in the FSS subnet with the FSS NSG attached. The MySQL
 DB System belongs in a private database subnet with its database NSG attached.
 The virtual-node pool must attach the pod NSG to its pods.
 
-For this encrypted demo, the application flows are:
+For this encrypted demo, the application flows to verify are listed below.
+The latest stack already supplies the LB and FSS paths and the conditional MySQL
+path described above; this is a verification checklist, not a list of rules to
+create again. With separate database client NSGs enabled, the MySQL source is
+the attached client NSG rather than the main pod NSG.
 
 | Source | Destination | Protocol / destination port | Purpose |
 |---|---|---|---|
@@ -124,13 +134,19 @@ For this encrypted demo, the application flows are:
 | Pods | DNS resolver/CoreDNS | UDP/TCP 53 as required by OKE | Name resolution |
 | Pods/platform image-pull path | Required registries and OCI services | TCP 443 | Image pulls and service access |
 
-Use stateful rules and allow both the initiating source's egress and the
-destination's ingress. Stateful rules cover return traffic. If existing
-stateless rules overlap, explicitly account for return traffic and ephemeral
-ports; do not assume a new stateful rule fixes an overlapping stateless path.
+Preserve the stack's paired stateless rules and their return paths. If adding
+rules for a different network design, allow source egress and destination
+ingress, and account for return traffic and ephemeral ports for stateless flows.
+Stateful rules cover return traffic, but do not override overlapping stateless
+rules; do not add stateful duplicates as a substitute for checking the path.
 Keep OKE's required control-plane and pod-network rules intact.
 
-Expose only TCP 443 on the public frontend. Backend TCP 80 stays private.
+The stock frontend NSG permits both 80 and 443. For this demo, remove its HTTP
+ingress and HTTP response rule in the stack configuration if the NSG is dedicated
+to this demo; do not remove rules needed by other applications from a shared NSG.
+For a shared stack, use a dedicated HTTPS-only frontend NSG instead. The chart
+has no HTTP listener regardless. Backend TCP 80 stays private and must remain
+allowed between the LB backend NSG and pods.
 The Service sets security-rule management to `None`, so the controller does not
 manage the NSG rules. Supply both LB NSG identifiers through local annotations.
 
