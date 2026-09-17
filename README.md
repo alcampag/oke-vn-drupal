@@ -44,6 +44,14 @@ manifests, or credential-bearing command output.
 
 ## 1. Prepare your prerequisites
 
+Provision the infrastructure with the Oracle DevRel
+[OKE Resource Manager Quickstart](https://github.com/oracle-devrel/technology-engineering/tree/main/oci-and-db/cloud-native/devops-and-containers/oke/oke-rm),
+the stack used for this demo. Apply its **infrastructure stack first**, then its
+**OKE stack**, and enable the virtual-node pool example. Follow the
+[demo-specific stack settings and handoff](docs/infrastructure.md#resource-manager-stack-prerequisite)
+before continuing. If you already deployed these stacks, verify those settings
+and reuse the resources; do not create a second cluster.
+
 You need:
 
 1. An active **enhanced OKE cluster with a ready virtual-node pool**, VCN-native
