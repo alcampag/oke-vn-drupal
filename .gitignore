@@ -1,0 +1,16 @@
+.local/
+.env
+.env.*
+!.env.example
+values.local*.yaml
+credentials*
+*.credentials.*
+*.pem
+*.key
+*.crt
+*.tgz
+rendered*.yaml
+kubeconfig*
+.kubeconfig
+.DS_Store
+__pycache__/

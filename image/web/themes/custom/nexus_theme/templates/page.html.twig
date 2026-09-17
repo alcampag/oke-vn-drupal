@@ -1,0 +1,29 @@
+<div class="site-shell">
+  <header class="site-header">
+    <a class="brand" href="{{ path('<front>') }}" aria-label="Nexus Research home">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span><strong>Nexus</strong><small>Research</small></span>
+    </a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a href="{{ path('<front>') }}#projects">Research</a>
+      <a href="{{ path('<front>') }}#people">People</a>
+      <a href="{{ path('<front>') }}#events">Events</a>
+      <a class="nav-cta" href="{{ path('user.login') }}">Research portal</a>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    {{ page.content.nexus_theme_content }}
+  </main>
+
+  <footer class="site-footer">
+    <div>
+      <strong>Nexus Research</strong>
+      <p>Open knowledge. Shared infrastructure. Ideas for a changing world.</p>
+    </div>
+    <div class="footer-meta">
+      <span>Milan · Europe</span>
+      <span>Demo site on OKE virtual nodes</span>
+    </div>
+  </footer>
+</div>

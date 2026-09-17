@@ -1,0 +1,8 @@
+**
+!Dockerfile
+!composer.json
+!composer.lock
+!settings.php
+!healthz.html
+!web/
+!web/**

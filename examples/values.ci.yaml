@@ -1,0 +1,10 @@
+# Synthetic placeholders for rendering only; not a deployable environment.
+image:
+  repository: example.invalid/demo/drupal
+storage:
+  fss:
+    availabilityDomain: test-domain
+    compartmentOcid: test-compartment
+    mountTargetOcid: test-mount-target
+drupal:
+  reverseProxyAddresses: ["192.0.2.0/24"]

@@ -1,0 +1,9 @@
+name: Nexus Research
+type: theme
+description: A visual, responsive theme for the Nexus Research demo site.
+base theme: false
+core_version_requirement: ^11
+libraries:
+  - nexus_theme/global
+regions:
+  content: Content

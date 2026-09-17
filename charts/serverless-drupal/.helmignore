@@ -1,0 +1,9 @@
+.git/
+.local/
+values.local*.yaml
+credentials*
+*.pem
+*.key
+*.crt
+*.tgz
+.DS_Store

@@ -1,0 +1,224 @@
+<?php
+
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
+use Drupal\node\Entity\Node;
+use Drupal\node\Entity\NodeType;
+
+/**
+ * Installs the demo content model, theme, and sample content.
+ */
+function nexus_demo_install(): void {
+  _nexus_demo_create_content_type('project', 'Research project', 'Interdisciplinary research programmes and outcomes.');
+  _nexus_demo_create_content_type('person', 'Researcher', 'People participating in the research programme.');
+  _nexus_demo_create_content_type('event', 'Event', 'Talks, workshops, and public research events.');
+
+  _nexus_demo_create_field('project', 'field_project_summary', 'Project summary', 'string_long');
+  _nexus_demo_create_field('project', 'field_research_area', 'Research area', 'list_string', [
+    'allowed_values' => [
+      'climate' => 'Climate systems',
+      'health' => 'Human health',
+      'computing' => 'Advanced computing',
+    ],
+  ]);
+  _nexus_demo_create_field('project', 'field_project_status', 'Status', 'list_string', [
+    'allowed_values' => [
+      'active' => 'Active',
+      'discovery' => 'Discovery',
+      'complete' => 'Complete',
+    ],
+  ]);
+  _nexus_demo_add_project_file_fields();
+  _nexus_demo_create_field('person', 'field_role', 'Role', 'string');
+  _nexus_demo_create_field('person', 'field_biography', 'Biography', 'text_long');
+  _nexus_demo_create_field('event', 'field_event_date', 'Event date', 'datetime', [
+    'datetime_type' => 'datetime',
+  ]);
+  _nexus_demo_create_field('event', 'field_location', 'Location', 'string');
+
+  _nexus_demo_create_sample_content();
+
+  \Drupal::service('theme_installer')->install(['nexus_theme']);
+  \Drupal::configFactory()->getEditable('system.theme')
+    ->set('default', 'nexus_theme')
+    ->save();
+  \Drupal::configFactory()->getEditable('system.site')
+    ->set('name', 'Nexus Research')
+    ->set('slogan', 'Ideas for a changing world')
+    ->set('page.front', '/research')
+    ->save();
+}
+
+/**
+ * Creates a content type when it does not already exist.
+ */
+function _nexus_demo_create_content_type(string $id, string $label, string $description): void {
+  if (!NodeType::load($id)) {
+    NodeType::create([
+      'type' => $id,
+      'name' => $label,
+      'description' => $description,
+      'new_revision' => TRUE,
+      'display_submitted' => FALSE,
+    ])->save();
+  }
+}
+
+/**
+ * Creates a field storage and attaches it to a content type.
+ */
+function _nexus_demo_create_field(string $bundle, string $name, string $label, string $type, array $storage_settings = [], array $field_settings = [], bool $required = TRUE): void {
+  if (!FieldStorageConfig::loadByName('node', $name)) {
+    FieldStorageConfig::create([
+      'field_name' => $name,
+      'entity_type' => 'node',
+      'type' => $type,
+      'settings' => $storage_settings,
+      'cardinality' => 1,
+    ])->save();
+  }
+
+  if (!FieldConfig::loadByName('node', $bundle, $name)) {
+    FieldConfig::create([
+      'field_name' => $name,
+      'entity_type' => 'node',
+      'bundle' => $bundle,
+      'label' => $label,
+      'required' => $required,
+      'settings' => $field_settings,
+    ])->save();
+  }
+}
+
+/**
+ * Adds FSS-backed upload fields to Research project content.
+ */
+function _nexus_demo_add_project_file_fields(): void {
+  _nexus_demo_create_field('project', 'field_project_image', 'Project image', 'image', [
+    'uri_scheme' => 'public',
+  ], [
+    'file_extensions' => 'png gif jpg jpeg webp',
+    'file_directory' => 'project-images/[date:custom:Y]-[date:custom:m]',
+    'max_filesize' => '32 MB',
+    'alt_field' => TRUE,
+    'alt_field_required' => TRUE,
+    'title_field' => FALSE,
+    'title_field_required' => FALSE,
+    'max_resolution' => '2400x2400',
+    'min_resolution' => '',
+  ], FALSE);
+
+  _nexus_demo_create_field('project', 'field_project_document', 'Research document or dataset', 'file', [
+    'uri_scheme' => 'public',
+    'display_field' => FALSE,
+    'display_default' => TRUE,
+  ], [
+    'file_extensions' => 'pdf csv txt doc docx',
+    'file_directory' => 'project-documents/[date:custom:Y]-[date:custom:m]',
+    'max_filesize' => '32 MB',
+    'description_field' => TRUE,
+  ], FALSE);
+
+  $form_display = EntityFormDisplay::load('node.project.default') ?: EntityFormDisplay::create([
+    'targetEntityType' => 'node',
+    'bundle' => 'project',
+    'mode' => 'default',
+    'status' => TRUE,
+  ]);
+  $form_display
+    ->setComponent('field_project_image', [
+      'type' => 'image_image',
+      'weight' => 4,
+      'settings' => [
+        'progress_indicator' => 'throbber',
+        'preview_image_style' => 'thumbnail',
+      ],
+    ])
+    ->setComponent('field_project_document', [
+      'type' => 'file_generic',
+      'weight' => 5,
+      'settings' => ['progress_indicator' => 'throbber'],
+    ])
+    ->save();
+
+  $view_display = EntityViewDisplay::load('node.project.default') ?: EntityViewDisplay::create([
+    'targetEntityType' => 'node',
+    'bundle' => 'project',
+    'mode' => 'default',
+    'status' => TRUE,
+  ]);
+  $view_display
+    ->setComponent('field_project_image', [
+      'type' => 'image',
+      'label' => 'hidden',
+      'weight' => 0,
+      'settings' => ['image_link' => '', 'image_style' => 'large'],
+    ])
+    ->setComponent('field_project_document', [
+      'type' => 'file_default',
+      'label' => 'above',
+      'weight' => 5,
+    ])
+    ->save();
+}
+
+/**
+ * Adds upload fields to sites where Nexus Demo is already installed.
+ */
+function nexus_demo_update_11001(): string {
+  _nexus_demo_add_project_file_fields();
+  return 'Added FSS-backed image and document upload fields to Research projects.';
+}
+
+/**
+ * Adds disposable sample content for the demo homepage.
+ */
+function _nexus_demo_create_sample_content(): void {
+  $projects = [
+    ['Digital twins for resilient cities', 'A living simulation platform helping cities anticipate heat, mobility, and energy demand.', 'climate', 'active'],
+    ['Precision health at population scale', 'Privacy-preserving models that turn diverse health data into earlier, more equitable interventions.', 'health', 'discovery'],
+    ['Trustworthy computing beyond the cloud', 'New architectures for efficient, transparent AI across edge, cloud, and high-performance systems.', 'computing', 'active'],
+  ];
+  foreach ($projects as [$title, $summary, $area, $status]) {
+    Node::create([
+      'type' => 'project',
+      'title' => $title,
+      'status' => 1,
+      'field_project_summary' => $summary,
+      'field_research_area' => $area,
+      'field_project_status' => $status,
+    ])->save();
+  }
+
+  $people = [
+    ['Dr. Maya Chen', 'Director of Computational Science', 'Maya builds interdisciplinary teams working at the intersection of AI, climate, and public policy.'],
+    ['Prof. Luca Bianchi', 'Principal Investigator, Bioengineering', 'Luca develops accessible diagnostic platforms inspired by biological systems.'],
+    ['Amina Okafor', 'Research Fellow, Urban Systems', 'Amina studies how data and community knowledge can shape more resilient cities.'],
+  ];
+  foreach ($people as [$name, $role, $biography]) {
+    Node::create([
+      'type' => 'person',
+      'title' => $name,
+      'status' => 1,
+      'field_role' => $role,
+      'field_biography' => ['value' => $biography, 'format' => 'plain_text'],
+    ])->save();
+  }
+
+  $events = [
+    ['Open Research Forum', '2026-10-15T09:00:00', 'Nexus Auditorium · Milan'],
+    ['Designing Climate-Ready Cities', '2026-11-06T17:30:00', 'Online + Innovation Lab'],
+    ['Responsible AI Research Day', '2026-12-03T10:00:00', 'Nexus Campus · Milan'],
+  ];
+  foreach ($events as [$title, $date, $location]) {
+    Node::create([
+      'type' => 'event',
+      'title' => $title,
+      'status' => 1,
+      'field_event_date' => $date,
+      'field_location' => $location,
+    ])->save();
+  }
+}

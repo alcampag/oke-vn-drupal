@@ -1,0 +1,32 @@
+services:
+  mysql:
+    image: mysql:8.4
+    env_file: ${DEMO_TEST_ENV}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+    volumes: ["mysql-data:/var/lib/mysql"]
+  files-init:
+    image: drupal-demo:test
+    command: ["sh", "-ec", "chown 33:33 /var/www/html/sites/default/files && chmod 0775 /var/www/html/sites/default/files"]
+    volumes: ["files:/var/www/html/sites/default/files"]
+  drupal:
+    image: drupal-demo:test
+    env_file: ${DEMO_TEST_ENV}
+    depends_on:
+      mysql: {condition: service_healthy}
+      files-init: {condition: service_completed_successfully}
+    ports: ["127.0.0.1::80"]
+    volumes:
+      - "files:/var/www/html/sites/default/files"
+      - "./charts/serverless-drupal/files:/setup:ro"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1/healthz.html"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+volumes:
+  mysql-data:
+  files:

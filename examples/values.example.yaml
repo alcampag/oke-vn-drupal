@@ -1,0 +1,19 @@
+# Copy to .local/values.yaml; fill placeholders locally, never commit the result.
+image:
+  repository: "<registry-host>/<registry-namespace>/serverless-drupal"
+  tag: 11.4.7-demo.1
+nodeSelector:
+  kubernetes.io/arch: arm64
+drupal:
+  # The public LB subnet only, not the entire VCN or all addresses.
+  reverseProxyAddresses: ["<LB_SUBNET_CIDR>"]
+service:
+  annotations:
+    oci.oraclecloud.com/oci-network-security-groups: "<LB_BACKEND_NSG_ID>,<LB_FRONTEND_NSG_ID>"
+storage:
+  fss:
+    availabilityDomain: "<AVAILABILITY_DOMAIN>"
+    compartmentOcid: "<COMPARTMENT_ID>"
+    mountTargetOcid: "<MOUNT_TARGET_ID>"
+bootstrap:
+  mysqlAdminSecret: drupal-mysql-admin

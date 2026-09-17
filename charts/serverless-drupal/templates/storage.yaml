@@ -1,0 +1,27 @@
+{{- if and .Values.storage.enabled .Values.storage.createStorageClass }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ include "serverless-drupal.storageClassName" . }}
+provisioner: fss.csi.oraclecloud.com
+parameters:
+  availabilityDomain: {{ required "storage.fss.availabilityDomain required" .Values.storage.fss.availabilityDomain | quote }}
+  compartmentOcid: {{ required "storage.fss.compartmentOcid required" .Values.storage.fss.compartmentOcid | quote }}
+  mountTargetOcid: {{ required "storage.fss.mountTargetOcid required" .Values.storage.fss.mountTargetOcid | quote }}
+  encryptInTransit: {{ .Values.storage.fss.encryptInTransit | quote }}
+reclaimPolicy: {{ .Values.storage.reclaimPolicy }}
+volumeBindingMode: Immediate
+---
+{{- end }}
+{{- if .Values.storage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "serverless-drupal.fullname" . }}-files
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: {{ include "serverless-drupal.storageClassName" . }}
+  resources:
+    requests:
+      storage: {{ .Values.storage.size }}
+{{- end }}

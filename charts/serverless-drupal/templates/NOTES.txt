@@ -1,0 +1,4 @@
+Get the public endpoint:
+  kubectl get svc {{ include "serverless-drupal.fullname" . }} -n {{ .Release.Namespace }}
+Log in at https://<LB_IP>/user/login using your separate administrator Secret.
+See the root README for certificate rotation, verification, and retained-storage cleanup.

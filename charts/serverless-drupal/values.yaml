@@ -1,0 +1,61 @@
+replicaCount: 2
+nameOverride: ""
+fullnameOverride: ""
+image:
+  repository: REPLACE_WITH_YOUR_REGISTRY/serverless-drupal
+  tag: 11.4.7-demo.1
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+nodeSelector:
+  node-role.kubernetes.io/virtual-node: ""
+  kubernetes.io/arch: arm64
+resources:
+  requests: {cpu: "1", memory: 4Gi}
+  limits: {cpu: "1", memory: 4Gi}
+database:
+  existingSecret: drupal-database
+drupal:
+  trustedHostPatterns: ['.*']
+  reverseProxyAddresses: []
+  php:
+    memoryLimit: 256M
+    uploadMaxFilesize: 64M
+    postMaxSize: 64M
+    maxExecutionTime: 120
+service:
+  type: LoadBalancer
+  port: 443
+  annotations:
+    oci.oraclecloud.com/load-balancer-type: lb
+    service.beta.kubernetes.io/oci-load-balancer-backend-protocol: HTTP
+    oci.oraclecloud.com/security-rule-management-mode: None
+    oci-load-balancer.oraclecloud.com/health-check: '{"protocol":"HTTP","port":80,"urlPath":"/healthz.html","returnCode":200,"retries":2,"timeoutInMillis":5000}'
+    oci-load-balancer.oraclecloud.com/lb-cookie-session-persistence-config: '{"cookieName":"X-Oracle-OCI-Route","disableFallback":false,"path":"/","isSecure":true,"isHttpOnly":true}'
+  tls:
+    enabled: true
+    # Pre-created Secret; private keys are never stored in Helm values.
+    existingSecret: drupal-tls
+    revision: "0"
+storage:
+  enabled: true
+  createStorageClass: true
+  storageClassName: ""
+  size: 50Gi
+  reclaimPolicy: Retain
+  fss:
+    availabilityDomain: ""
+    compartmentOcid: ""
+    # Pre-create this mount target in the FSS subnet with its FSS NSG attached.
+    mountTargetOcid: ""
+    encryptInTransit: true
+bootstrap:
+  enabled: true
+  # Installs only into an empty database, never reinstalls over existing tables.
+  installIfEmpty: true
+  siteName: Nexus Research
+  adminSecret: drupal-site-admin
+  # Optional, used only to initialize the application DB/user on the first run.
+  mysqlAdminSecret: ""
+  resources:
+    requests: {cpu: "1", memory: 4Gi}
+    limits: {cpu: "1", memory: 4Gi}

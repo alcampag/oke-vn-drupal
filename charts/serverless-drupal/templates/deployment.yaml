@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "serverless-drupal.fullname" . }}
+  labels:
+    {{- include "serverless-drupal.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}
+  selector:
+    matchLabels:
+      {{- include "serverless-drupal.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "serverless-drupal.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      securityContext:
+        fsGroup: 33
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: drupal
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ required "database.existingSecret is required" .Values.database.existingSecret }}
+          env:
+            - name: DRUPAL_TRUSTED_HOST_PATTERNS
+              value: {{ .Values.drupal.trustedHostPatterns | toJson | quote }}
+            - name: DRUPAL_REVERSE_PROXY_ADDRESSES
+              value: {{ .Values.drupal.reverseProxyAddresses | toJson | quote }}
+            - name: PHP_INI_SCAN_DIR
+              value: /usr/local/etc/php/conf.d:/opt/drupal-php
+          ports:
+            - {name: http, containerPort: 80}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          startupProbe:
+            httpGet: {path: /healthz.html, port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /healthz.html, port: http}
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet: {path: /healthz.html, port: http}
+            periodSeconds: 20
+            failureThreshold: 3
+          volumeMounts:
+            - {name: php-config, mountPath: /opt/drupal-php, readOnly: true}
+            {{- if .Values.storage.enabled }}
+            - {name: files, mountPath: /var/www/html/sites/default/files}
+            {{- end }}
+      volumes:
+        - name: php-config
+          configMap:
+            name: {{ include "serverless-drupal.fullname" . }}-config
+            items:
+              - {key: uploads.ini, path: uploads.ini}
+        {{- if .Values.storage.enabled }}
+        - name: files
+          persistentVolumeClaim:
+            claimName: {{ include "serverless-drupal.fullname" . }}-files
+        {{- end }}

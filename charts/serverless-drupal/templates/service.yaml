@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "serverless-drupal.fullname" . }}
+  annotations:
+    demo.example/tls-revision: {{ .Values.service.tls.revision | quote }}
+    {{- toYaml .Values.service.annotations | nindent 4 }}
+    {{- if .Values.service.tls.enabled }}
+    service.beta.kubernetes.io/oci-load-balancer-ssl-ports: {{ .Values.service.port | quote }}
+    service.beta.kubernetes.io/oci-load-balancer-tls-secret: {{ required "service.tls.existingSecret required" .Values.service.tls.existingSecret | quote }}
+    {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  {{- if eq .Values.service.type "LoadBalancer" }}
+  allocateLoadBalancerNodePorts: false
+  {{- end }}
+  selector:
+    {{- include "serverless-drupal.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: {{ ternary "https" "http" .Values.service.tls.enabled }}
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP

@@ -1,0 +1,7 @@
+nexus_demo.home:
+  path: '/research'
+  defaults:
+    _controller: '\Drupal\nexus_demo\Controller\ResearchHomeController::build'
+    _title: 'Nexus Research'
+  requirements:
+    _permission: 'access content'

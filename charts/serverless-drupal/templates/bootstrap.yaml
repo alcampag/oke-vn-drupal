@@ -1,0 +1,62 @@
+{{- if .Values.bootstrap.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "serverless-drupal.fullname" . }}-setup
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      securityContext:
+        runAsUser: 33
+        runAsGroup: 33
+        fsGroup: 33
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: setup
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["/bin/sh", "/setup/bootstrap.sh"]
+          envFrom:
+            - secretRef:
+                name: {{ .Values.database.existingSecret }}
+            - secretRef:
+                name: {{ required "bootstrap.adminSecret required" .Values.bootstrap.adminSecret }}
+            {{- if .Values.bootstrap.mysqlAdminSecret }}
+            - secretRef:
+                name: {{ .Values.bootstrap.mysqlAdminSecret }}
+            {{- end }}
+          env:
+            - name: INSTALL_IF_EMPTY
+              value: {{ .Values.bootstrap.installIfEmpty | quote }}
+            - name: DRUPAL_SITE_NAME
+              value: {{ .Values.bootstrap.siteName | quote }}
+          resources:
+            {{- toYaml .Values.bootstrap.resources | nindent 12 }}
+          volumeMounts:
+            - {name: setup, mountPath: /setup, readOnly: true}
+            {{- if .Values.storage.enabled }}
+            - {name: files, mountPath: /var/www/html/sites/default/files}
+            {{- end }}
+      volumes:
+        - name: setup
+          configMap:
+            name: {{ include "serverless-drupal.fullname" . }}-config
+        {{- if .Values.storage.enabled }}
+        - name: files
+          persistentVolumeClaim:
+            claimName: {{ include "serverless-drupal.fullname" . }}-files
+        {{- end }}
+{{- end }}

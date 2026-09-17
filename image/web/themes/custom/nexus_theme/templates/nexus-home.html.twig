@@ -1,0 +1,98 @@
+<section class="hero">
+  <div class="hero-media" aria-hidden="true"></div>
+  <div class="hero-shade" aria-hidden="true"></div>
+  <div class="hero-content">
+    <p class="eyebrow"><span></span> Interdisciplinary science for real-world change</p>
+    <h1>Where bold research<br>meets shared purpose.</h1>
+    <p class="hero-copy">We connect science, technology, and society to turn ambitious questions into measurable progress.</p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="#projects">Explore our research <span>↗</span></a>
+      <a class="button button-quiet" href="#events">Join an event</a>
+    </div>
+  </div>
+  <div class="hero-stats" aria-label="Research statistics">
+    <div><strong>18</strong><span>active programmes</span></div>
+    <div><strong>12</strong><span>research partners</span></div>
+    <div><strong>7</strong><span>countries connected</span></div>
+  </div>
+</section>
+
+<section class="section section-projects" id="projects">
+  <header class="section-heading">
+    <div>
+      <p class="section-kicker">What we are exploring</p>
+      <h2>Research with a horizon.</h2>
+    </div>
+    <p>From healthier communities to resilient cities and trustworthy computing, our programmes combine deep expertise with open collaboration.</p>
+  </header>
+  <div class="project-grid">
+    {% for project in projects %}
+      <article class="project-card project-card--{{ project.accent }}">
+        <div class="project-card-top">
+          <span class="project-index">0{{ loop.index }}</span>
+          <span class="status"><i></i>{{ project.status }}</span>
+        </div>
+        <p class="project-area">{{ project.area }}</p>
+        <h3><a href="{{ project.url }}">{{ project.title }}</a></h3>
+        <p>{{ project.summary }}</p>
+        <a class="card-link" href="{{ project.url }}" aria-label="Read about {{ project.title }}">Discover the programme <span>→</span></a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="manifesto">
+  <p class="section-kicker">Our approach</p>
+  <blockquote>“The most important questions no longer fit inside a single discipline.”</blockquote>
+  <div class="manifesto-copy">
+    <p>We make complex research useful by bringing diverse minds, shared data, and open infrastructure together.</p>
+    <a href="#people">Meet the people behind the work <span>→</span></a>
+  </div>
+</section>
+
+<section class="section section-people" id="people">
+  <header class="section-heading compact">
+    <div>
+      <p class="section-kicker">Meet the team</p>
+      <h2>Curious by nature.<br>Collaborative by design.</h2>
+    </div>
+  </header>
+  <div class="people-grid">
+    {% for person in people %}
+      <article class="person-card">
+        <div class="person-avatar person-avatar--{{ loop.index }}"><span>{{ person.title|first }}</span></div>
+        <div>
+          <h3>{{ person.title }}</h3>
+          <p class="person-role">{{ person.role }}</p>
+          <p>{{ person.biography }}</p>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section section-events" id="events">
+  <header class="section-heading">
+    <div>
+      <p class="section-kicker">What is happening</p>
+      <h2>Ideas are better shared.</h2>
+    </div>
+    <p>Join researchers, practitioners, and communities for conversations that move knowledge into action.</p>
+  </header>
+  <div class="event-list">
+    {% for event in events %}
+      <a class="event" href="{{ event.url }}">
+        <time datetime="{{ event.date }}"><strong>{{ event.day }}</strong><span>{{ event.month }}</span></time>
+        <div><h3>{{ event.title }}</h3><p>{{ event.date }} · {{ event.location }}</p></div>
+        <span class="event-arrow">↗</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="closing-cta">
+  <p class="section-kicker">Work with us</p>
+  <h2>Bring your hardest question.</h2>
+  <p>Let’s build the team, evidence, and infrastructure to answer it.</p>
+  <a class="button button-primary" href="mailto:hello@nexus-research.example">Start a conversation <span>↗</span></a>
+</section>

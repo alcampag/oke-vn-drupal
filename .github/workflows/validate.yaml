@@ -1,0 +1,26 @@
+name: Validate
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: azure/setup-helm@v4.3.0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install PyYAML==6.0.2
+      - run: python scripts/check-public.py
+      - run: helm lint charts/serverless-drupal -f examples/values.ci.yaml
+      - run: python scripts/test-chart.py
+      - run: docker build -t drupal-demo:test image
+      - run: docker run --rm --entrypoint composer drupal-demo:test audit --no-dev
+      - run: python scripts/smoke-test.py --skip-build
+      - run: helm package charts/serverless-drupal --destination /tmp/chart

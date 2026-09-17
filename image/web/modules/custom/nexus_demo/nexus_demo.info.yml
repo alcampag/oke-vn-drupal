@@ -1,0 +1,12 @@
+name: Nexus Research Demo
+type: module
+description: Installs the content model and sample content for the Nexus Research demo site.
+package: Custom
+core_version_requirement: ^11
+dependencies:
+  - drupal:datetime
+  - drupal:file
+  - drupal:image
+  - drupal:node
+  - drupal:options
+  - drupal:text
